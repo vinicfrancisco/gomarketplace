@@ -30,23 +30,64 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const products = await AsyncStorage.getItem('@GoMarketplace:products');
+
+      setProducts(JSON.parse(products));
     }
 
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
+  const addToCart = useCallback(async (product: Omit<Product, 'quantity'>) => {
+    const productsExists = products.find(prod => prod.id === product.id);
+
+    if(productsExists) {
+      setProducts(products.map(prod => {
+        if (prod.id === product.id) {
+          return {
+            ...prod,
+            quantity: prod.quantity + 1,
+          }
+        }
+
+        return prod;
+      }))
+    } else {
+      setProducts([...products, {...product, quantity: 1}]);
+    }
+
+    await AsyncStorage.setItem('@GoMarketplace:products', JSON.stringify(products));
+  }, [products]);
 
   const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    setProducts(state => state.map(product => {
+      if(product.id === id) {
+        return {
+          ...product,
+          quantity: product.quantity + 1,
+        }
+      }
+
+      return product;
+    }));
+
+    await AsyncStorage.setItem('@GoMarketplace:products', JSON.stringify(products));
+  }, [products]);
 
   const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    setProducts(state => state.map(product => {
+      if (product.id === id) {
+        return {
+          ...product,
+          quantity: product.quantity > 0 ? product.quantity - 1 : 0,
+        }
+      }
+
+      return product;
+    }));
+
+    await AsyncStorage.setItem('@GoMarketplace:products', JSON.stringify(products));
+  }, [products]);
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
